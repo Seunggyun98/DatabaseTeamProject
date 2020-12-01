@@ -60,14 +60,12 @@ public class Database {
         Statement statement = conn.createStatement();
 
         statement.executeUpdate("DROP TABLE IF EXISTS Client CASCADE;");
-        statement.executeUpdate("DROP TABLE IF EXISTS Stroe CASCADE;");
-        statement.executeUpdate("DROP TABLE IF EXISTS Applied CASCADE;");
+        statement.executeUpdate("DROP TABLE IF EXISTS Store CASCADE;");
         statement.executeUpdate("DROP TABLE IF EXISTS Product CASCADE;");
 
-        statement.executeUpdate("create table if not exists Client(userID int,pName varchar(20),locX double precision,locY double precision,primary key(userID));");
-        statement.executeUpdate("create table if not exists Store(storeID int, bName varchar(20), sName varchar(20), sAddress varchar(40), pURL varchar(40), locX double precision,locY double precision, primary key(storeID));");
+        statement.executeUpdate("create table Client(cID int,pName varchar(20), primary key(cID));");
+        statement.executeUpdate("create table if not exists Store(storeID int, bName varchar(20), sName varchar(20), sAddress varchar(40), pURL varchar(40), locX double precision,locY double precision, distance double precision, primary key(storeID));");
         statement.executeUpdate("create table if not exists Product(pID int, bName varchar(40), pName varchar(40), price int, eName varchar(40), primary key(pID));");
-        statement.executeUpdate("create table if not exists Applied(userID int, storeID int, distance double precision, primary key(userID,storeID));");
     }
     private void loadFromCSV(ArrayList<Item> list) throws IOException {
         File csv = new File("Type_All.csv");

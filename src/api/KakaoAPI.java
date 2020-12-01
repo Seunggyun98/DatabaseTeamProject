@@ -4,8 +4,8 @@ import java.io.FileWriter;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -16,16 +16,14 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
 import database.Database;
-import parser.Item;
-import userInterface.SQL;
 
 import javax.net.ssl.HttpsURLConnection;
+import javax.xml.crypto.Data;
 
 public class KakaoAPI {
     public static void find(int radius, String brand) throws SQLException{
         JSONArray jsonArray=addrToCoord("127.043784", "37.279509", String.valueOf(radius));
-        printJSONArray(jsonArray);
-        printNearStore(jsonArray,brand);
+        printJSONArray(jsonArray, brand);
     }
 
     public static JSONArray addrToCoord(String x, String y, String radius){
@@ -76,7 +74,6 @@ public class KakaoAPI {
     }
     public static String brand_rename(String brand){
         String renamed_brandName = "";
-        System.out.println(brand);
         switch (brand){
             case "미니스톱":
                 renamed_brandName = "MINISTOP(미니스톱)";
@@ -97,8 +94,10 @@ public class KakaoAPI {
         }
         return renamed_brandName;
     }
-    public static void printJSONArray(JSONArray arr) throws SQLException{
+
+    public static void printJSONArray(JSONArray arr, String brand) throws SQLException{
         Statement statement = Database.connect().createStatement();
+        ResultSet rs;
         statement.executeUpdate("delete from Store *;");
         JSONObject store;
         System.out.println("Store List");
@@ -116,44 +115,23 @@ public class KakaoAPI {
                 distance = (String) store.get("distance");
                 locationX = Double.valueOf((String) store.get("x"));
                 locationY = Double.valueOf((String) store.get("y"));
-                System.out.println("이전"+brandName);
+
                 brandName = brand_rename(brandName);
-                System.out.println("이후"+brandName);
-                statement.executeUpdate("Insert Into Store values('"+storeID+"','"+brandName+"','"+storeName+"','"+storeAddress+"','"+placeURL+"','"+locationX+"','"+locationY+"');");
-                //System.out.printf(storeID);
-                //System.out.printf("storeName"+storeName + " ");
-                //System.out.printf("storeAddress"+storeAddress + " ");
-                //System.out.printf("placeURL"+placeURL + " ");
-                System.out.printf("("+distance+"m)");
-                //System.out.printf("X:"+locationX + " Y:" + locationY);
-                System.out.println();
 
+                statement.executeUpdate("Insert Into Store values('"+storeID+"','"+brandName+"','"+storeName+"','"+storeAddress+"','"+placeURL+"',"+locationX+","+locationY+","+distance+");");
             }
         }
-    }
-
-    public static ArrayList printNearStore(JSONArray arr,String brand){
-        JSONObject store;
-        ArrayList<String> tempList=new ArrayList<>();
-        for(Object obj:arr){
-            store=(JSONObject)obj;
-            String brandName=(String)store.get("category_name");
-            if(brandName.length()>14){
-                brandName=brandName.substring(14);
-                tempList.add(brandName);
-            }
+        String query="Select sName, distance from store";
+        if(brand!=null){
+            String query2=" Where bName like concat('%','"+brand+"', '%')";
+            query=query.concat(query2);
+        } else{
+            query=query.concat(";");
+        }
+        rs=statement.executeQuery(query);
+        while(rs.next()){
+            System.out.println(rs.getString(1)+"("+rs.getInt(2)+"m)");
         }
 
-        HashSet hs=new HashSet(tempList);
-        ArrayList<String> storeList=new ArrayList<>(hs);
-        for(int i=0; i<storeList.size(); i++){
-            String brand_temp = brand_rename(storeList.get(i));
-            if(brand_temp.equals(brand))
-            {
-                System.out.println(brand_temp);
-            }
-        }
-
-        return storeList;
     }
 }

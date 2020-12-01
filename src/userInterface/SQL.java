@@ -119,5 +119,11 @@ public class SQL {
 
     }
 
+    public static int numItem (String brand){
+        //편의점 별로 아이템 개수
+        int num=0;
+        //편의점 별로 뷰 생성  bName like concat
 
+        return num;
+    }
 }

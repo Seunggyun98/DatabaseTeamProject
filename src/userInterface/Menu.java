@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.InputMismatchException;
 import java.util.Scanner;
@@ -19,6 +21,7 @@ import java.text.SimpleDateFormat;
 import java.text.ParseException;
 
 public class Menu{
+    static  int searchTime=0;
     static ArrayList<String> itemList = new ArrayList<>();
     static Tool function = new Tool();
     static Scanner in = new Scanner(System.in);
@@ -46,7 +49,7 @@ public class Menu{
 
 
         System.out.println("--------------메뉴--------------");
-        System.out.println("1.상품 검색\t2.전체 상품 리스트\t3.주변 편의점 목록\t4.프로그램 종료");
+        System.out.println("1.상품 검색\t2.전체 상품 리스트\t3.주변 편의점 목록\t4.검색 기록\t5.프로그램 종료");
         try {
             int menuSelect = in.nextInt();
             switch(menuSelect) {
@@ -65,6 +68,10 @@ public class Menu{
                     KakaoAPI.find(radius,null);
                     menu();
                 case 4:
+                    showHistory();
+                    menu();
+                    break;
+                case 5:
                     System.out.println("프로그램을 종료합니다. 좋은 하루 되세요~");
                     System.exit(0);
                 default :
@@ -90,7 +97,7 @@ public class Menu{
          */
 
         System.out.println("검색 필터를 설정해주세요.");
-        System.out.println("1. 기본 정렬 2. 가격 오름차순 3. 가격 내림차순 4. 행사별 5. 주변 편의점");
+        System.out.println("1. 기본 정렬 2. 가격 오름차순 3. 가격 내림차순 4. 행사별 ");
         String query = "",query1 = "",query2 = "";
 
         if(brand.equals("all")) {
@@ -116,18 +123,7 @@ public class Menu{
             case 4:
                 found = function.searchEvent("all",brand);
                 break;
-            case 5:
 
-                System.out.println("몇 m 반경 내에 있는 편의점을 확인하시겠습니까? : ");
-                int radius = in.nextInt();
-                System.out.println(radius + "m 내의 편의점 목록을 보여줍니다.");
-                KakaoAPI.find(radius,null);
-                query = query1 +" natural join store "+query2;
-                //System.out.println(query);
-                System.out.println("해당 편의점에서 판매하는 상품 목록입니다.");
-                found = SQL.query(statement, query);
-                //list = SQL.query(statement, "Select pID, bName, pName, price, eName From  ");
-                break;
             default:
                 System.out.println("다시 선택해주세요.");
                 showEntryList();
@@ -149,11 +145,11 @@ public class Menu{
                 System.out.println((next)+" 페이지/"+((found.size()/20)+1)+"페이지");
                 System.out.println("----------------------------------------------------------------------------------------------------");
             }
-            System.out.printf("\t%-15s\t\t%-15s\t\t\t%s\t\t%s\n","편의점","상품명","가격","행사");
+            System.out.printf("\t%-15s\t\t\t\t%-15s\t\t\t\t\t\t\t%s\t\t\t\t%s\n","편의점","상품명","가격","행사");
             System.out.println("----------------------------------------------------------------------------------------------------");
             for(int i=idx;i<idx+20;i++) {
                 try {
-                    System.out.printf("%-15s \t %25s \t\t\t %-8d \t%3s\n"
+                    System.out.printf("%-15s \t %25s \t\t\t\t\t\t\t\t%d \t\t\t%3s\n"
                             ,found.get(i).getBrand(),found.get(i).getName(),found.get(i).getPrice(),found.get(i).getEvent());
                 }catch(IndexOutOfBoundsException e) {
                     break;
@@ -241,7 +237,8 @@ public class Menu{
         }
 
 
-
+        itemList.add(ItemName);
+        statement.executeUpdate("insert into Client values("+(searchTime++)+",'"+ItemName+"');");
         if(found.size()!=0) {
             in = new Scanner(System.in);
             System.out.println("총 상품 개수 :"+found.size());
@@ -261,11 +258,11 @@ public class Menu{
                     System.out.println((next)+" 페이지/"+((found.size()/20)+1)+"페이지");
                     System.out.println("----------------------------------------------------------------------------------------------------");
                 }
-                System.out.printf("\t%-15s\t\t%-15s\t\t\t%s\t\t%s\n","편의점","상품명","가격","행사");
+                System.out.printf("\t%-15s\t\t\t\t%-15s\t\t\t\t\t\t\t%s\t\t\t\t%s\n","편의점","상품명","가격","행사");
                 System.out.println("----------------------------------------------------------------------------------------------------");
                 for(int i=idx;i<idx+20;i++) {
                     try {
-                        System.out.printf("%-15s \t %25s \t\t\t %-8d \t%3s\n"
+                        System.out.printf("%-15s \t %25s \t\t\t\t\t\t\t %d \t\t\t%3s\n"
                                 ,found.get(i).getBrand(),found.get(i).getName(),found.get(i).getPrice(),found.get(i).getEvent());
                     }catch(IndexOutOfBoundsException e) {
                         break;
@@ -341,8 +338,48 @@ public class Menu{
 
     }
 
-    private static void deleteView() {
+    private static void showHistory() throws SQLException {
+        statement.executeUpdate("create view HistoryStatView as select S.pName as ItemName, bName, eName, count(*) " +
+                "from Product I, Client S " +
+                "where I.pName like concat ('%',S.pName,'%') " +
+                "group by S.pName, cube(bName, eName) " +
+                "order by ItemName, bName;");
 
+        ResultSet resultSet;
+        resultSet=statement.executeQuery("select *\n" +
+                "  from HistoryStatView\n" +
+                "  where bName is null or eName is null\n" +
+                "  order by ItemName, bName,eName;");
+        ResultSetMetaData rsmd = resultSet.getMetaData();
+        int columnsNumber = rsmd.getColumnCount();
+
+        System.out.println("ItemName\t\t\tBrand\t\t\t\tEvent\t\t\tCount");
+        while(resultSet.next()){
+            String ItemName="";
+            String bName="";
+            String eName="";
+            int cnt=0;
+            for (int i = 1; i <= columnsNumber; i++) {
+                switch(i) {
+                    case 1:
+                        ItemName = resultSet.getString(i);
+                        break;
+                    case 2:
+                        bName = resultSet.getString(i);
+                        break;
+                    case 3:
+                        eName = resultSet.getString(i);
+                        break;
+                    case 4:
+                        cnt = resultSet.getInt(i);
+                        break;
+
+                }
+            }
+            System.out.printf("%10s\t\t%-20s\t\t%3s\t\t%4d\n",ItemName,bName,eName,cnt);
+           // System.out.println(ItemName+"\t\t"+bName+"\t\t"+eName+"\t\t"+cnt);
+        }
+        statement.executeUpdate("drop view HistoryStatView Cascade");
     }
 
 }
