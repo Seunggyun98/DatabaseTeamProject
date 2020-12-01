@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="json-simple-1.1.1">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/json-simple-1.1.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/jsoup-1.13.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/postgresql-42.2.18.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
