@@ -16,14 +16,17 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
 import database.Database;
+import userInterface.Menu;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.xml.crypto.Data;
 
+
 public class KakaoAPI {
-    public static void find(int radius, String brand) throws SQLException{
+    public static void find(int radius, String brand,String Item_number) throws SQLException{
+
         JSONArray jsonArray=addrToCoord("127.043784", "37.279509", String.valueOf(radius));
-        printJSONArray(jsonArray, brand);
+        printJSONArray(jsonArray, brand,Item_number);
     }
 
     public static JSONArray addrToCoord(String x, String y, String radius){
@@ -95,10 +98,12 @@ public class KakaoAPI {
         return renamed_brandName;
     }
 
-    public static void printJSONArray(JSONArray arr, String brand) throws SQLException{
+    public static void printJSONArray(JSONArray arr, String brand,String Item_number) throws SQLException{
         Statement statement = Database.connect().createStatement();
         ResultSet rs;
         statement.executeUpdate("delete from Store *;");
+
+
         JSONObject store;
         System.out.println("Store List");
         for (Object parse_document : arr) {
@@ -117,11 +122,12 @@ public class KakaoAPI {
                 locationY = Double.valueOf((String) store.get("y"));
 
                 brandName = brand_rename(brandName);
-
-                statement.executeUpdate("Insert Into Store values('"+storeID+"','"+brandName+"','"+storeName+"','"+storeAddress+"','"+placeURL+"',"+locationX+","+locationY+","+distance+");");
+//                String query = "insert into path values('"+Item_number+"','"+brandName+"','"+storeName+"','"+locationX+"','"+locationY+"','"+distance+"');";
+//                statement.executeUpdate(query);
+                statement.executeUpdate("Insert Into Store values('"+storeID+"','"+brandName+"','"+storeName+"','"+storeAddress+"','"+placeURL+"','"+locationX+"','"+locationY+"','"+distance+"');");
             }
         }
-        String query="Select sName, distance from store";
+        String query="Select sName, distance, bName, locx, locy from store";
         if(brand!=null){
             String query2=" Where bName like concat('%','"+brand+"', '%')";
             query=query.concat(query2);
@@ -131,6 +137,9 @@ public class KakaoAPI {
         rs=statement.executeQuery(query);
         while(rs.next()){
             System.out.println(rs.getString(1)+"("+rs.getInt(2)+"m)");
+            String query3 = "insert into path values('"+Item_number+"','"+rs.getString(3)+"','"+rs.getString(1)+"','"+rs.getDouble(4)+"','"+rs.getDouble(5)+"','"+rs.getInt(2)+"');";
+            statement.executeUpdate(query3);
+
         }
 
     }

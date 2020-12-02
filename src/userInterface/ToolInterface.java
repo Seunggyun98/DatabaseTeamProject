@@ -192,7 +192,7 @@ class Tool extends ToolClass{
         System.out.println("몇 미터 이내에 있는 편의점을 찾으시겠습니까?(기본 : 1000m) : ");
         radius = in.nextInt();
         try {
-            KakaoAPI.find(radius,null);
+            KakaoAPI.find(radius,null,null);
         } catch (SQLException e) {
             e.printStackTrace();
         }

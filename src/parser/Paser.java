@@ -52,7 +52,7 @@ public class Paser {
         File file = new File(fname);
         //파일 출력 한글 인코딩
         FileOutputStream fileOutputStream = new FileOutputStream(file);
-        OutputStreamWriter OutputStreamWriter = new OutputStreamWriter(fileOutputStream, "MS949");
+        OutputStreamWriter OutputStreamWriter = new OutputStreamWriter(fileOutputStream, "UTF-8");
         BufferedWriter bw = new BufferedWriter(OutputStreamWriter);
 
         bw.write("품목명,가격,브랜드,행사");
