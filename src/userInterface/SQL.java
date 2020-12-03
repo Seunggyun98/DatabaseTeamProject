@@ -108,7 +108,7 @@ public class SQL {
 
     public static ArrayList<Item> SortByPrice(Statement statement,String query) throws SQLException{
         ArrayList<Item> sorted = new ArrayList<>();
-        System.out.println(query+" order by price asc;");
+        //System.out.println(query+" order by price asc;");
         sorted = query(statement, query+" order by price asc;");
         return sorted;
     }

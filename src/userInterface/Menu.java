@@ -23,6 +23,7 @@ import java.text.ParseException;
 public class Menu {
     static int searchTime = 0;
     static ArrayList<String> itemList = new ArrayList<>();
+    static  HashSet<String> itemSet = new HashSet<>();
     static Tool function = new Tool();
     static Scanner in = new Scanner(System.in);
     public static ArrayList<String> itemNumber = new ArrayList<>();
@@ -104,6 +105,7 @@ public class Menu {
                     searchItemMenu();
                     break;
                 case 2:
+                    showEntryStatistic();
                     showEntryList();
                     break;
 
@@ -113,6 +115,7 @@ public class Menu {
                     System.out.println(radius + "m 내의 편의점 목록을 보여줍니다.");
                     KakaoAPI.find(radius, null, null);
                     menu();
+                    break;
                 case 4:
                     showHistory();
                     menu();
@@ -144,6 +147,7 @@ public class Menu {
                 case 6:
                     System.out.println("프로그램을 종료합니다. 좋은 하루 되세요~");
                     System.exit(0);
+                
                 default:
                     menu();
                     break;
@@ -157,7 +161,6 @@ public class Menu {
 
     private static void showEntryList() throws FileNotFoundException, SQLException {
         //20개씩 보여주기, 1~maxPage까지 선택으로 리스트 갱신, 0입력시 메뉴로
-
         ArrayList<Item> found = list;
         String brand = function.searchBrand();
         /*
@@ -265,7 +268,7 @@ public class Menu {
         //20개씩 보여주기, 1~maxPage까지 선택으로 리스트 갱신, 0입력시 메뉴로
 
         String brand = function.searchBrand();
-        System.out.println("-----------------------------" + brand);
+        System.out.println("-----------------------------");
         ArrayList<Item> found = new ArrayList<>();
         found = Menu.found;
         System.out.println("검색 필터를 설정해주세요.");
@@ -415,11 +418,33 @@ public class Menu {
         }
 
     }
+    private static void showEntryStatistic() throws SQLException {
+            String query = "select bName,eName,count(*) from Product group by cube(bName, eName);";
+            ResultSet resultSet = statement.executeQuery(query);
+            ResultSetMetaData rsmd = resultSet.getMetaData();
+            int columnsNumber = rsmd.getColumnCount();
+        while (resultSet.next()) {
+            String bName = "";
+            String eName = "";
+            int cnt = 0;
+            for (int i = 1; i <= columnsNumber; i++) {
+                switch (i) {
+                    case 1:
+                        bName = resultSet.getString(i);
+                        break;
+                    case 2:
+                        eName = resultSet.getString(i);
+                        break;
+                    case 3:
+                        cnt = resultSet.getInt(i);
+                        break;
 
-    private static void deleteView() {
-
+                }
+            }
+            System.out.printf("%-20s\t\t%3s\t\t%4d\n",bName, eName, cnt);
+            // System.out.println(ItemName+"\t\t"+bName+"\t\t"+eName+"\t\t"+cnt);
+        }
     }
-
     private static void showHistory() throws SQLException {
         //OLAP 쿼리 사용, 뷰이용
         statement.executeUpdate("create view HistoryStatView as select S.pName as ItemName, bName, eName, count(*) " +
@@ -429,10 +454,13 @@ public class Menu {
                 "order by ItemName, bName;");
 
         ResultSet resultSet;
+        //OLAP을 통해 얻은 결과가 너무 많기 때문에,
+        // 전부 보여주지않고, 깔끔하게 보여주기 위하여 편의점 별, 행사별로만 보여줌.
+
         resultSet = statement.executeQuery("select *\n" +
                 "  from HistoryStatView\n" +
-                "  where bName is null or eName is null\n" +
                 "  order by ItemName, bName,eName;");
+
         ResultSetMetaData rsmd = resultSet.getMetaData();
         int columnsNumber = rsmd.getColumnCount();
 
