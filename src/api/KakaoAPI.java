@@ -1,4 +1,5 @@
 package api;
+
 import java.io.BufferedReader;
 import java.io.FileWriter;
 import java.io.InputStreamReader;
@@ -23,25 +24,25 @@ import javax.xml.crypto.Data;
 
 
 public class KakaoAPI {
-    public static void find(int radius, String brand,String Item_number) throws SQLException{
+    public static void find(int radius, String brand, String Item_number) throws SQLException {
 
-        JSONArray jsonArray=addrToCoord("127.043784", "37.279509", String.valueOf(radius));
-        printJSONArray(jsonArray, brand,Item_number);
+        JSONArray jsonArray = addrToCoord("127.043784", "37.279509", String.valueOf(radius));
+        printJSONArray(jsonArray, brand, Item_number);
     }
 
-    public static JSONArray addrToCoord(String x, String y, String radius){
-        String url = "https://dapi.kakao.com/v2/local/search/category.json?category_group_code=CS2&x="+x+"&y="+y+"&radius="+radius+"&sort=distance";
-        JSONArray jsonArray=getJSONData(url);
-        String jsonString="";
-        if(jsonArray != null){
-            jsonString= jsonArray.toString();
+    public static JSONArray addrToCoord(String x, String y, String radius) {
+        String url = "https://dapi.kakao.com/v2/local/search/category.json?category_group_code=CS2&x=" + x + "&y=" + y + "&radius=" + radius + "&sort=distance";
+        JSONArray jsonArray = getJSONData(url);
+        String jsonString = "";
+        if (jsonArray != null) {
+            jsonString = jsonArray.toString();
         }
 
-        try{
-            FileWriter output=new FileWriter("Store.json");
+        try {
+            FileWriter output = new FileWriter("Store.json");
             output.write(jsonString);
             output.close();
-        }catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return jsonArray;
@@ -64,20 +65,21 @@ public class KakaoAPI {
                 jsonString.append(buf);
             }
             br.close();
-            JSONParser parser=new JSONParser();
-            JSONObject obj=(JSONObject)parser.parse(jsonString.toString());
-            JSONArray parse_documents=(JSONArray)obj.get("documents");
+            JSONParser parser = new JSONParser();
+            JSONObject obj = (JSONObject) parser.parse(jsonString.toString());
+            JSONArray parse_documents = (JSONArray) obj.get("documents");
 
             return parse_documents;
-        }catch (Exception e){
+        } catch (Exception e) {
             System.err.println("KakaoAPI parsing failed");
             e.printStackTrace();
         }
         return null;
     }
-    public static String brand_rename(String brand){
+
+    public static String brand_rename(String brand) {
         String renamed_brandName = "";
-        switch (brand){
+        switch (brand) {
             case "미니스톱":
                 renamed_brandName = "MINISTOP(미니스톱)";
                 break;
@@ -98,7 +100,7 @@ public class KakaoAPI {
         return renamed_brandName;
     }
 
-    public static void printJSONArray(JSONArray arr, String brand,String Item_number) throws SQLException{
+    public static void printJSONArray(JSONArray arr, String brand, String Item_number) throws SQLException {
         Statement statement = Database.connect().createStatement();
         ResultSet rs;
         statement.executeUpdate("delete from Store *;");
@@ -109,9 +111,9 @@ public class KakaoAPI {
         for (Object parse_document : arr) {
             store = (JSONObject) parse_document;
             String storeID, brandName, storeName, storeAddress, placeURL, distance;
-            double locationX,locationY;
+            double locationX, locationY;
             brandName = (String) store.get("category_name");
-            if(brandName.length()>14) {
+            if (brandName.length() > 14) {
                 storeID = (String) store.get("id");
                 brandName = brandName.substring(14);  // store brand
                 storeName = (String) store.get("place_name");
@@ -124,23 +126,26 @@ public class KakaoAPI {
                 brandName = brand_rename(brandName);
 //                String query = "insert into path values('"+Item_number+"','"+brandName+"','"+storeName+"','"+locationX+"','"+locationY+"','"+distance+"');";
 //                statement.executeUpdate(query);
-                statement.executeUpdate("Insert Into Store values('"+storeID+"','"+brandName+"','"+storeName+"','"+storeAddress+"','"+placeURL+"','"+locationX+"','"+locationY+"','"+distance+"');");
+                statement.executeUpdate("Insert Into Store values('" + storeID + "','" + brandName + "','" + storeName + "','" + storeAddress + "','" + placeURL + "','" + locationX + "','" + locationY + "','" + distance + "');");
             }
         }
-        String query="Select sName, distance, bName, locx, locy from store";
-        if(brand!=null){
-            String query2=" Where bName like concat('%','"+brand+"', '%')";
-            query=query.concat(query2);
-        } else{
-            query=query.concat(";");
-        }
-        rs=statement.executeQuery(query);
-        while(rs.next()){
-            System.out.println(rs.getString(1)+"("+rs.getInt(2)+"m)");
-            String query3 = "insert into path values('"+Item_number+"','"+rs.getString(3)+"','"+rs.getString(1)+"','"+rs.getDouble(4)+"','"+rs.getDouble(5)+"','"+rs.getInt(2)+"');";
-            statement.executeUpdate(query3);
-
+        String query = "Select sName, distance, bName, locx, locy from store";
+        if (brand != null) {
+            String query2 = " Where bName like concat('%','" + brand + "', '%')";
+            query = query.concat(query2);
+        } else {
+            query = query.concat(";");
         }
 
+        rs = statement.executeQuery(query);
+        while (rs.next()) {
+            System.out.println(rs.getString(1) + "(" + rs.getInt(2) + "m)");
+            if (Item_number != null) {
+                String query3 = "insert into path values('" + Item_number + "','" + rs.getString(3) + "','" + rs.getString(1) + "','" + rs.getDouble(4) + "','" + rs.getDouble(5) + "','" + rs.getInt(2) + "');";
+                statement.executeUpdate(query3);
+            }
+
+        }
     }
+
 }

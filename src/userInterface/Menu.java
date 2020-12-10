@@ -13,7 +13,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 import parser.Item;
-import parser.Paser;
+import parser.Parser;
 import api.KakaoAPI;
 import database.Database;
 
@@ -50,6 +50,8 @@ public class Menu {
                 "from path\n" +
                 "where distance = (select min(distance) from path);";
         ResultSet rs1 = statement.executeQuery(query1);
+
+
         while (rs1.next()) {
             min_distance = rs1.getString(1);
         }
@@ -66,28 +68,23 @@ public class Menu {
                     "from path\n" +
                     "where distance  = (select max(distance)from path where sname not like concat('%','" + min_distance.charAt(0) + "','%'));";
             rs2 = statement.executeQuery(query);
-            while (rs2.next()) {
+            /*while (rs2.next()) {
                 max_distance = rs2.getString(1);
-            }
+            }*/
+            statement.executeUpdate("create view path_min as select * from path a where distance <= all (select distance from path b where a.itemnumber = b.itemnumber); ");
+
             statement.executeUpdate("create view path_number as select t3.sName as dest, t4.sName as origin, sqrt( power(t3.locx - t4.locx,2) +power(t3.locy - t4.locy,2))*1000 as weight\n" +
-                    "from path t3 cross join path t4\n" +
+                    "from path_min t3 cross join path_min t4\n" +
                     "where t3.sName <> t4.sName;");
-            String query3 = "with recursive\n" +
-                    "\troute(dest,mid,origin,total,count_temp,length) as\n" +
-                    "\t\t(select dest, dest || '' as mid,origin,weight as total ,1,1 from path_number\n" +
-                    "\t\tunion\n" +
-                    "\t\tselect a.dest, mid ||' -> ' || d.dest as mid ,d.origin,weight + total as total,1,a.length +1 as length \n" +
-                    "\t\t from route a , path_number d\n" +
-                    "\t\twhere a.length < " + itemList.size() + "  and mid not like concat('%',substring(d.dest,1,3),'%') and d.dest not like concat('%',substring(a.origin,1,3),'%'))\n" +
-                    "\tselect mid || ' -> '||origin from route\n" +
-                    "\twhere dest = '" + min_distance + "' and origin = '" + max_distance + "' and length >= (select count(distinct substring(bname,1,3))\n" +
-                    "from path a)-1;";
+
+            String query3 = "with recursive route(dest,mid,origin,total,count_temp,length) as (select dest, dest || '' as mid,origin,weight as total ,1,1 from path_number union select a.dest, mid ||' -> ' || d.dest as mid ,d.origin,weight + total as total,1,a.length +1 as length from route a , path_number d where a.length < "+itemList.size()+"  and mid not like concat('%',substring(d.dest,1,3),'%')) select mid from route where dest = '"+min_distance+"' and length >= (select count(distinct substring(itemnumber,1,3)) from path a);";
             ResultSet rs3 = statement.executeQuery(query3);
             while (rs3.next()) {
                 System.out.println(rs3.getString(1));
                 break;
             }
             statement.executeUpdate("drop view path_number;");
+            statement.executeUpdate("drop view path_min;");
             return 1;
         }
     }
@@ -419,7 +416,7 @@ public class Menu {
 
     }
     private static void showEntryStatistic() throws SQLException {
-            String query = "select bName,eName,count(*) from Product group by cube(bName, eName);";
+            String query = "select bName,eName,count(*) from Product group by rollup(bName, eName);";
             ResultSet resultSet = statement.executeQuery(query);
             ResultSetMetaData rsmd = resultSet.getMetaData();
             int columnsNumber = rsmd.getColumnCount();
@@ -450,7 +447,7 @@ public class Menu {
         statement.executeUpdate("create view HistoryStatView as select S.pName as ItemName, bName, eName, count(*) " +
                 "from Product I, Client S " +
                 "where I.pName like concat ('%',S.pName,'%') " +
-                "group by S.pName, cube(bName, eName) " +
+                "group by S.pName, rollup(bName, eName) " +
                 "order by ItemName, bName;");
 
         ResultSet resultSet;
@@ -512,7 +509,7 @@ public class Menu {
                 bw.write(date);
                 bw.flush();
                 bw.close();
-                Paser.main(args);
+                Parser.main(args);
                 Database db = new Database();
                 db.createTable(Database.connect());
                 db.insert_product();

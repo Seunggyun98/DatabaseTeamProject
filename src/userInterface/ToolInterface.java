@@ -64,7 +64,7 @@ class Tool extends ToolClass{
             Menu.statement.executeUpdate("create view " +ItemName+"View as Select pID, bName, pName, price, eName From Product Where pName like concat('%','"+ItemName+"','%');");
 
             Menu.found =SQL.query(Menu.statement,
-                    "Select pID, bName, pName, price, eName From Product Where pName like concat('%','"+ItemName+"', '%');");
+                    "Select pID, bName, pName, price, eName From Product Where pName like concat('%','\"+ItemName+\"', '%');");
 
         } catch (SQLException e) {
             e.printStackTrace();
